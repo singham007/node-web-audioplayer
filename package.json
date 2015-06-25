@@ -1,0 +1,21 @@
+{
+  "name": "node-audio-player",
+  "version": "0.0.1",
+  "description": "Node.js Native Audio Player",
+  "main": "player.js",
+  "repository" :
+  { "type" : "git", 
+  	"url"  : "https://github.com/singham007/node-audio-player.git"
+  },
+   "dependencies" : {
+    "lame"    	: "~1.2.2",
+    "speaker"   : "~0.2.5",
+    "read-chunk": "~1.0.1",
+    "file-type"	: "~2.7.0",
+    "colors"	: "~1.1.2",
+    "express"     : "~4.9.8"
+    },
+  "author": "shreyas101",
+  "license": "MIT"
+}
+
