@@ -11,8 +11,8 @@
     "colors": "~1.1.2",
     "express": "~4.9.8",
     "file-type": "~2.7.0",
-    "glob": "^6.0.4",
     "lame": "~1.2.2",
+    "pcm-volume": "^1.0.0",
     "read-chunk": "~1.0.1",
     "speaker": "~0.2.5"
   },

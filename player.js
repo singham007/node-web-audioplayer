@@ -10,8 +10,7 @@ var lame = require('lame'),
 	cp = require('child_process'),
 	express  = require('express'),
     app      = express(),     
-	config=require('./config.json'),
- 	glob = require("glob");
+	config=require('./config.json');
 
 	//audioOptions = {channels: 2, bitDepth: 16, sampleRate: 44100};
 
@@ -20,7 +19,7 @@ speaker,inputStream,
 playNext=true, 
 songsDir = process.env.HOME + '/Music',
 songs=[] ,
-currentVol = 100/*Playlist*/;
+currentVol = 100;
 
 /*
 var mkdirSync = function (path) {
@@ -41,7 +40,13 @@ mkdirSync('.'+songsDir);
 
 function getMp3SubFolders(srcpath){
 
+fs.readdirSync(srcpath).forEach(function(file){
+	if(fs.statSync(path.join(srcpath, file)).isDirectory())
+		getMp3SubFolders(path.join(srcpath,file));
+	else if(isMp3(path.join(srcpath,file))) songs.push(path.join(srcpath,file));
+});
 
+/*
 songs = songs.concat(glob.sync(srcpath + "/*.mp3" ).filter(
 	function(file){
     	return isMp3(file);
@@ -52,7 +57,7 @@ fs.readdirSync(srcpath).filter(function(file) {
   }).forEach(function(_dir){
 	getMp3SubFolders(path.join(srcpath,_dir));
 });
-
+*/
 
 }
 
@@ -73,9 +78,11 @@ function getMp3Files(srcpath) {
 */
 
 function isMp3(mp3Src) { //Validate mp3 file
-	var buffer = readChunk.sync(mp3Src, 0, 262);
+
+	if(mp3Src.indexOf('.mp3') < 0) return false;
+
 	try {
-		return fileType(buffer).ext === 'mp3';
+		return fileType(readChunk.sync(mp3Src, 0, 262)).ext === 'mp3';
 	}catch(e){
 		return false;
 	}
@@ -116,21 +123,32 @@ function playSong(currentSong) { // Play song of index currentSong from songs[]
 		console.log('Please Enter valid Song Number'.red);
 		return;
 	}
-	speaker     = new Speaker();
+
 	decoder = lame.Decoder();
 	inputStream = fs.createReadStream(songs[currentSong]);  // Read the first file
-  	var a = inputStream.pipe(decoder).pipe(speaker); // Pipe the read data into the decoder and then out to the speakers
-  	
-  	speaker.once('flush', function(){
-    // Play next song, if there is one,else StartOver
+	
+	setTimeout(function(){
+  		inputStream.pipe(decoder).on( 'format',function(format){
+  			speaker     = new Speaker(format);
+  			this.pipe(speaker);
+  		});
+	},500);
+
+
+  	inputStream.on('end',function(){
+            // Play next song, if there is one,else StartOver
     	if (currentSong < songs.length - 1){
     		currentSong= currentSong+1;
-      		if(playNext) playSong(currentSong);
+			 playSong(currentSong);
     		}else{
     			currentSong=0;
     			playSong(currentSong);
     		}
-  	});
+    });
+
+  	 // Pipe the read data into the decoder and then out to the speakers
+  	
+
 
   
 
@@ -189,7 +207,8 @@ else console.log('ERR : Wrong command...'.red + '\nCommands: play [songNumber] ,
 
 function stop(){
 	decoder.unpipe(speaker);
-	inputStream.unpipe(decoder);  
+	inputStream.unpipe(decoder);
+	inputStream.destroy();
 	speaker=null ;
 }
 
@@ -209,22 +228,42 @@ function play(line){
 	line = line.replace('play','');
 	playNext=false; 
 	if(speaker) speaker.end(); 
-	if(line) {
-		try {
-			playSong(parseInt(line) - 1 ); 
-			currentSong =parseInt(line) - 1 ;
-		}catch(e){
-			console.log('ERR : play argument should be INT'.red);
-			playSong(currentSong);
-		} 
-	}else playSong(0);
-	setTimeout(function(){playNext=true},3000);
+
+	if(inputStream){
+		inputStream.destroy();
+		inputStream.once('close',function(){
+		if(line){
+			try {
+				playSong(parseInt(line) - 1 ); 
+				currentSong =parseInt(line) - 1 ;
+			}catch(e){
+				console.log('ERR : play argument should be INT'.red);
+				playSong(currentSong);
+				} 
+			}else playSong(0);
+
+		});
+	}else{
+		if(line){
+			try {
+				playSong(parseInt(line) - 1 ); 
+				currentSong =parseInt(line) - 1 ;
+			}catch(e){
+				console.log('ERR : play argument should be INT'.red);
+				playSong(currentSong);
+				} 
+			}else playSong(0);
+	}
+
 }
 
 function next(){
 	currentSong = currentSong+1;
-	playNext=true ; 
 	speaker.end();
+	if(inputStream)inputStream.destroy();
+	inputStream.once('close',function(){
+		playSong(currentSong);
+	})
 }
 
 function stopApp(){
