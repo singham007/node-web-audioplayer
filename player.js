@@ -10,12 +10,17 @@ var lame = require('lame'),
 	cp = require('child_process'),
 	express  = require('express'),
     app      = express(),     
-	config=require('./config.json');
+	config=require('./config.json'),
+ 	glob = require("glob");
 
-console.log(config);
 	//audioOptions = {channels: 2, bitDepth: 16, sampleRate: 44100};
 
-var decoder, speaker,inputStream,playNext=true, songsDir = config.MusicDirectory,songs=[],dispSongs = [] ,currentVol = 100/*Playlist*/;
+var decoder, 
+speaker,inputStream,
+playNext=true, 
+songsDir = process.env.HOME + '/Music',
+songs=[] ,
+currentVol = 100/*Playlist*/;
 
 /*
 var mkdirSync = function (path) {
@@ -34,24 +39,38 @@ mkdirSync('.'+songsDir);
 
 
 
-try{
-var files = fs.readdirSync(songsDir); // Read all files
-}catch(e){
-	if(e.code == 'ENOENT'){
-		console.log('ERR:'.red + songsDir.red + ' doesnt exist! Plz Enter correct path to MusicDirectory in config.json'.red);
-		process.exit(1);
-	}
+function getMp3SubFolders(srcpath){
+
+
+songs = songs.concat(glob.sync(srcpath + "/*.mp3" ).filter(
+	function(file){
+    	return isMp3(file);
+	}));
+
+fs.readdirSync(srcpath).filter(function(file) {
+    return fs.statSync(path.join(srcpath, file)).isDirectory();
+  }).forEach(function(_dir){
+	getMp3SubFolders(path.join(srcpath,_dir));
+});
+
+
 }
 
-console.log('\n Searching Song in '.green  + songsDir.yellow + ' folder... \n'.green);
 
-for(var j=0,len= files.length;j<len;j++){
 
-	files[j] = songsDir+files[j];
-	var validateIfMp3 = isMp3(files[j]);
-    //console.log(files[j] + " isMp3 ? : " + validateIfMp3);
-    if(validateIfMp3) songs.push(files[j]); // Push if file is MP3
+/*
+function getDirectories(srcpath) {
+  return fs.readdirSync(srcpath).filter(function(file) {
+    return fs.statSync(path.join(srcpath, file)).isDirectory();
+  });
 }
+
+function getMp3Files(srcpath) {
+  return glob.sync(srcpath + "*.mp3" ).filter(function(file) {
+    return isMp3(file);
+  });
+}
+*/
 
 function isMp3(mp3Src) { //Validate mp3 file
 	var buffer = readChunk.sync(mp3Src, 0, 262);
@@ -62,26 +81,35 @@ function isMp3(mp3Src) { //Validate mp3 file
 	}
 }
 
+try{
+	
+getMp3SubFolders(songsDir);
+//songs = getMp3Files(songsDir); // Read all files
+}catch(e){
+	if(e.code == 'ENOENT'){
+		console.log('ERR:'.red + songsDir.red + ' doesnt exist! Plz Enter correct path to MusicDirectory in config.json'.red);
+		process.exit(1);
+	}
+}
+
+console.log('\n Searching Song in '.green  + songsDir.yellow + ' folder... \n'.green);
+
+
 console.log(' ' + songs.length.toString().yellow + ' Songs Found : \n'.green);
-
-
-	for(var k=0;k<songs.length;k++){		
-		dispSongs[k] = songs[k].replace(songsDir,'').replace('.mp3','');
-		}
+		
 
 displayPlaylist();
 
 
 function displayPlaylist(){
 
-	var j=1;
-	dispSongs.forEach(function(song){
-		console.log( j.toString().red + ' : ' + song.yellow );
-		j++;
+	songs.forEach(function(song,j){
+		console.log( (j + 1).toString().red + ' : ' + song.replace(songsDir,'').replace('.mp3','').yellow );
 	});
 }
 
 var currentSong =0 ;
+
 function playSong(currentSong) { // Play song of index currentSong from songs[]
 
 	if(currentSong > songs.length-1 || currentSong < 0){

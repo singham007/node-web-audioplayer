@@ -3,19 +3,19 @@
   "version": "0.0.1",
   "description": "Node.js Native Audio Player",
   "main": "player.js",
-  "repository" :
-  { "type" : "git", 
-  	"url"  : "https://github.com/singham007/node-audio-player.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/singham007/node-audio-player.git"
   },
-   "dependencies" : {
-    "lame"    	: "~1.2.2",
-    "speaker"   : "~0.2.5",
+  "dependencies": {
+    "colors": "~1.1.2",
+    "express": "~4.9.8",
+    "file-type": "~2.7.0",
+    "glob": "^6.0.4",
+    "lame": "~1.2.2",
     "read-chunk": "~1.0.1",
-    "file-type"	: "~2.7.0",
-    "colors"	: "~1.1.2",
-    "express"     : "~4.9.8"
-    },
+    "speaker": "~0.2.5"
+  },
   "author": "shreyas101",
   "license": "MIT"
 }
-
